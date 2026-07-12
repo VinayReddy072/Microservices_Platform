@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- =====================================================================
+         Parent: Spring Boot BOM — manages all Spring dependency versions.
+         Spring Boot 4.1.0 + Spring Cloud 2025.1.2 confirmed stable on
+         start.spring.io as of July 2026.
+    ===================================================================== -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.1.0</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+
+    <groupId>com.emergencylending</groupId>
+    <artifactId>emergency-equipment-lending-platform</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>Emergency Equipment Lending Platform — Parent</name>
+    <description>
+        Multi-module Spring Boot microservices platform for managing emergency
+        equipment lending. Contains infrastructure modules (Eureka, Config Server,
+        API Gateway) under platform/ and domain microservices (loan-service,
+        inventory-service) under services/.
+    </description>
+
+    <!-- =====================================================================
+         Module paths — two levels deep so relativePath in child POMs is ../../pom.xml
+    ===================================================================== -->
+    <modules>
+        <module>platform/eureka-server</module>
+        <module>platform/config-server</module>
+        <module>platform/api-gateway</module>
+        <module>services/loan-service</module>
+        <module>services/inventory-service</module>
+    </modules>
+
+    <!-- =====================================================================
+         Common properties
+    ===================================================================== -->
+    <properties>
+        <java.version>25</java.version>
+        <maven.compiler.release>25</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <spring-cloud.version>2025.1.2</spring-cloud.version>
+        <!-- Resilience4J 2.4.0 — Spring Boot 4.x compatible starter is resilience4j-spring-boot4 -->
+        <resilience4j.version>2.4.0</resilience4j.version>
+    </properties>
+
+    <!-- =====================================================================
+         Dependency Management — import Spring Cloud BOM so child POMs
+         only need to name starters without versions.
+    ===================================================================== -->
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Cloud BOM — covers eureka, config, gateway, feign, loadbalancer -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Explicit entries to avoid Maven reactor validation errors when the BOM
+                 import hasn't been processed yet during the reactor scan phase. -->
+            <!-- In Spring Boot 4.x, spring-boot-starter-aop was renamed to
+                 spring-boot-starter-aspectj. Explicit version needed here to satisfy
+                 the Maven reactor POM validation step which runs before BOM imports. -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-aspectj</artifactId>
+                <version>4.1.0</version>
+            </dependency>
+            <!-- spring-cloud-starter-gateway is in the Spring Cloud BOM but the reactor
+                 validator requires it here explicitly during the multi-module POM scan. -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-starter-gateway</artifactId>
+                <version>4.2.2</version>
+            </dependency>
+            <!-- Resilience4J BOM (2.4.0 includes resilience4j-spring-boot4 for Boot 4.x) -->
+            <dependency>
+                <groupId>io.github.resilience4j</groupId>
+                <artifactId>resilience4j-bom</artifactId>
+                <version>${resilience4j.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Explicit version to satisfy Maven reactor POM validation before BOM resolves -->
+            <dependency>
+                <groupId>io.github.resilience4j</groupId>
+                <artifactId>resilience4j-spring-boot4</artifactId>
+                <version>${resilience4j.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- =====================================================================
+         Dependencies shared by ALL modules
+    ===================================================================== -->
+    <dependencies>
+        <!-- Actuator endpoints: /actuator/health used by Eureka health checks -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <!-- Lombok: reduce boilerplate (getters, builders, etc.) -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <!-- Test slice -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <!-- =====================================================================
+         Build — repackage plugin inherited by all Spring Boot child modules.
+         maven-compiler-plugin: Lombok must be declared in annotationProcessorPaths
+         with JDK 17+ to ensure @Data/@Builder/@NoArgsConstructor generate correctly.
+    ===================================================================== -->
+    <build>
+        <pluginManagement>
+            <plugins>
+                <!-- Compiler: explicit Lombok annotation processor path for JDK 17-25.
+                     Spring Boot 4.1.0's parent BOM doesn't expose lombok.version as a
+                     property, so the version is pinned explicitly here. -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>1.18.46</version>
+                            </path>
+                        </annotationProcessorPaths>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <configuration>
+                        <excludes>
+                            <exclude>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                            </exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

@@ -1,0 +1,57 @@
+# ============================================================
+# loan-service — DEV profile
+# Served by config-server at: GET /loan-service/dev
+# ============================================================
+
+spring:
+  datasource:
+    url: ${LOAN_DB_URL:jdbc:postgresql://localhost:5432/loan_db}
+    username: ${LOAN_DB_USER:loan_user}
+    password: ${LOAN_DB_PASS:loan_pass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+  jpa:
+    hibernate:
+      ddl-auto: update        # DEV: auto-create/update schema on startup
+    show-sql: true            # DEV: log every SQL statement
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+# DEV: verbose logging for diagnosing startup and Feign call issues
+logging:
+  level:
+    root: INFO
+    com.emergencylending: DEBUG
+    org.springframework.cloud: DEBUG
+    feign: DEBUG
+
+# Resilience4J config (dev — more lenient thresholds for local testing)
+resilience4j:
+  retry:
+    instances:
+      inventoryService:
+        max-attempts: 3
+        wait-duration: 500ms
+        retry-exceptions:
+          - java.io.IOException
+          - feign.RetryableException
+  circuitbreaker:
+    instances:
+      inventoryService:
+        sliding-window-size: 5
+        failure-rate-threshold: 50        # 50% failure → trip
+        wait-duration-in-open-state: 10s  # shorter in dev for faster testing
+        permitted-number-of-calls-in-half-open-state: 2
+
+# Feign client timeouts (dev — slightly more lenient)
+feign:
+  client:
+    config:
+      inventory-service:
+        connect-timeout: 3000
+        read-timeout: 5000
+        logger-level: FULL

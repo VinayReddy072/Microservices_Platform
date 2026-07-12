@@ -1,0 +1,87 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: loan-service
+  # Pull externalised config from config-server.
+  # "optional:" means startup continues if config-server is temporarily down.
+  config:
+    import: "optional:configserver:http://localhost:8888"
+  # Active profile — change to "production" for prod deployments.
+  profiles:
+    active: dev
+  # Datasource — values overridden by config-server for the active profile.
+  # These fallback values allow local startup without config-server.
+  datasource:
+    url: ${LOAN_DB_URL:jdbc:postgresql://localhost:5432/loan_db}
+    username: ${LOAN_DB_USER:loan_user}
+    password: ${LOAN_DB_PASS:loan_pass}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+# ── OpenFeign ─────────────────────────────────────────────────────────────────
+# Per-client timeout config (Layer 1 of the resilience stack).
+# Values are overridden per-profile by config-server (loan-service-dev.yml, etc.)
+feign:
+  client:
+    config:
+      inventory-service:
+        connect-timeout: 3000   # 3 s — fail fast on TCP connection timeout
+        read-timeout: 5000      # 5 s — fail fast on slow response
+        logger-level: FULL      # log headers + body in dev (config-server overrides to BASIC in prod)
+
+# ── Resilience4J ─────────────────────────────────────────────────────────────
+# Fallback values — config-server overrides these per profile.
+resilience4j:
+  retry:
+    instances:
+      inventoryService:
+        max-attempts: 3
+        wait-duration: 500ms
+        # Layer 2: ONLY retry on network/transport errors, not on business-logic
+        # responses (e.g., equipment genuinely unavailable). This prevents phantom
+        # double-approvals from a service that responded correctly but negatively.
+        retry-exceptions:
+          - java.io.IOException
+          - feign.RetryableException
+  circuitbreaker:
+    instances:
+      inventoryService:
+        # Layer 3: trip circuit when 50% of calls fail in a 5-call window
+        sliding-window-size: 5
+        failure-rate-threshold: 50
+        # Wait 10s in OPEN state before allowing one probe call (HALF-OPEN)
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 2
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, circuitbreakers, circuitbreakerevents, retries
+  endpoint:
+    health:
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true
+
+logging:
+  level:
+    com.emergencylending.loan: DEBUG
+    feign: DEBUG

@@ -1,0 +1,29 @@
+# ── Build output ──────────────────────────────────────────────────────────────
+target/
+**/target/
+
+# ── IDE / editor metadata ─────────────────────────────────────────────────────
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*.DS_Store
+
+# ── Environment / secrets ─────────────────────────────────────────────────────
+.env
+*.env
+.env.*
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Maven wrapper (keep .mvn directory but not wrapper jar binaries) ──────────
+!.mvn/wrapper/maven-wrapper.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# ── OS generated ──────────────────────────────────────────────────────────────
+Thumbs.db
+ehthumbs.db
+Desktop.ini

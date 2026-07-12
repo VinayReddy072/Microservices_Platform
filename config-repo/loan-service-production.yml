@@ -1,0 +1,59 @@
+# ============================================================
+# loan-service — PRODUCTION profile
+# Served by config-server at: GET /loan-service/production
+# ============================================================
+
+spring:
+  datasource:
+    url: ${LOAN_DB_URL}           # NO default — must be set in production env
+    username: ${LOAN_DB_USER}     # NO default — must be set in production env
+    password: ${LOAN_DB_PASS}     # NO default — must be set in production env
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  jpa:
+    hibernate:
+      ddl-auto: validate          # PROD: schema must match entities — fail fast if not
+    show-sql: false               # PROD: do NOT log SQL (performance + data exposure)
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+# PROD: minimal logging — only warnings and errors surfaced
+logging:
+  level:
+    root: WARN
+    com.emergencylending: INFO
+    org.springframework.cloud: WARN
+    feign: BASIC
+
+# Resilience4J config (prod — tighter thresholds, longer wait)
+resilience4j:
+  retry:
+    instances:
+      inventoryService:
+        max-attempts: 3
+        wait-duration: 1s
+        retry-exceptions:
+          - java.io.IOException
+          - feign.RetryableException
+  circuitbreaker:
+    instances:
+      inventoryService:
+        sliding-window-size: 10
+        failure-rate-threshold: 40      # trip at 40% failure rate
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+
+# Feign client timeouts (prod — stricter)
+feign:
+  client:
+    config:
+      inventory-service:
+        connect-timeout: 2000
+        read-timeout: 3000
+        logger-level: BASIC

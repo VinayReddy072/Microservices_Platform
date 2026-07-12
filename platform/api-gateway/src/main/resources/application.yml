@@ -1,0 +1,53 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  config:
+    import: "optional:configserver:http://localhost:8888"
+  cloud:
+    gateway:
+      # Explicit routes — auto-discovery-locator is OFF so only intended
+      # paths are exposed externally. This is a deliberate security decision:
+      # new services must be explicitly routed here, not auto-exposed.
+      discovery:
+        locator:
+          enabled: false
+      routes:
+        # ── Route 1: Loan Service ──────────────────────────────────────────
+        - id: loan-service-route
+          uri: lb://loan-service
+          predicates:
+            - Path=/api/loans/**
+          filters:
+            # Strip the /api prefix so loan-service receives /loans/...
+            - RewritePath=/api/loans/(?<remaining>.*), /loans/${remaining}
+          # Optional: add per-route timeout overrides here if needed
+
+        # ── Route 2: Inventory Service ────────────────────────────────────
+        - id: inventory-service-route
+          uri: lb://inventory-service
+          predicates:
+            - Path=/api/equipment/**
+          filters:
+            # Strip the /api prefix so inventory-service receives /equipment/...
+            - RewritePath=/api/equipment/(?<remaining>.*), /equipment/${remaining}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, gateway
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    com.emergencylending.gateway: INFO

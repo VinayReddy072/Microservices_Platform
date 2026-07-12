@@ -1,0 +1,44 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: inventory-service
+  # Pull externalised config from config-server.
+  # "optional:" means startup continues even if config-server is temporarily down —
+  # the service will fall back to local application.yml values.
+  config:
+    import: "optional:configserver:http://localhost:8888"
+  # Active profile — change to "production" for prod deployments.
+  # Config server serves inventory-service-dev.yml or inventory-service-production.yml
+  # depending on this value.
+  profiles:
+    active: dev
+  # Datasource — values overridden by config-server for the active profile.
+  # These fallback values allow local startup without config-server.
+  datasource:
+    url: ${INVENTORY_DB_URL:jdbc:postgresql://localhost:5432/inventory_db}
+    username: ${INVENTORY_DB_USER:inventory_user}
+    password: ${INVENTORY_DB_PASS:inventory_pass}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info

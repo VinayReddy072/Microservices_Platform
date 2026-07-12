@@ -1,0 +1,29 @@
+# ============================================================
+# inventory-service — DEV profile
+# Served by config-server at: GET /inventory-service/dev
+# ============================================================
+
+spring:
+  datasource:
+    url: ${INVENTORY_DB_URL:jdbc:postgresql://localhost:5432/inventory_db}
+    username: ${INVENTORY_DB_USER:inventory_user}
+    password: ${INVENTORY_DB_PASS:inventory_pass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+  jpa:
+    hibernate:
+      ddl-auto: update        # DEV: auto-create/update schema on startup
+    show-sql: true            # DEV: log every SQL statement
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+# DEV: verbose logging
+logging:
+  level:
+    root: INFO
+    com.emergencylending: DEBUG
+    org.springframework.cloud: DEBUG

@@ -1,0 +1,12 @@
+# Architecture diagrams and Architecture Decision Records (ADRs) land here
+# in later phases of the project (Days 6-15).
+#
+# Planned contents:
+#   architecture-diagram.png  — C4 or component diagram showing all services
+#   adr/
+#     ADR-001-service-decomposition.md
+#     ADR-002-synchronous-vs-async-communication.md
+#     ADR-003-database-per-service.md
+#     ADR-004-gateway-security-strategy.md
+#
+# Do not add files here until the corresponding build phase is complete.
