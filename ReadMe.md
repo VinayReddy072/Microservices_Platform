@@ -44,7 +44,7 @@ cd "C:\Users\SAI VIKRANTH TEJ\Desktop\Microservices_Platform"
 git init
 git add .
 git commit -m "chore: initial project scaffold — Days 1-5"
-git remote add origin <GIT_REMOTE_URL>   # replace with your GitHub/GitLab URL
+git remote add origin https://github.com/VinayReddy072/Microservices_Platform   # replace with your GitHub/GitLab URL
 git push -u origin main
 ```
 
