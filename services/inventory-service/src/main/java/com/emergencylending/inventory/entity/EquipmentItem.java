@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 /**
  * JPA entity representing a single piece of emergency equipment.
  *
- * <p>Persisted to the {@code inventory_db} PostgreSQL database.
+ * <p>Persisted to the {@code inventory_db} MySQL 8.x database.
  * Owned entirely by inventory-service (database-per-service pattern).
  */
 @Entity

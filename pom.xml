@@ -4,16 +4,11 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- =====================================================================
-         Parent: Spring Boot BOM — manages all Spring dependency versions.
-         Spring Boot 4.1.0 + Spring Cloud 2025.1.2 confirmed stable on
-         start.spring.io as of July 2026.
-    ===================================================================== -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>4.1.0</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/> 
     </parent>
 
     <groupId>com.emergencylending</groupId>
@@ -66,22 +61,16 @@
                 <scope>import</scope>
             </dependency>
             <!-- Explicit entries to avoid Maven reactor validation errors when the BOM
-                 import hasn't been processed yet during the reactor scan phase. -->
+            import hasn't been processed yet during the reactor scan phase. -->
             <!-- In Spring Boot 4.x, spring-boot-starter-aop was renamed to
-                 spring-boot-starter-aspectj. Explicit version needed here to satisfy
-                 the Maven reactor POM validation step which runs before BOM imports. -->
+            spring-boot-starter-aspectj. Explicit version needed here to satisfy
+            the Maven reactor POM validation step which runs before BOM imports. -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-aspectj</artifactId>
                 <version>4.1.0</version>
             </dependency>
-            <!-- spring-cloud-starter-gateway is in the Spring Cloud BOM but the reactor
-                 validator requires it here explicitly during the multi-module POM scan. -->
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-starter-gateway</artifactId>
-                <version>4.2.2</version>
-            </dependency>
+
             <!-- Resilience4J BOM (2.4.0 includes resilience4j-spring-boot4 for Boot 4.x) -->
             <dependency>
                 <groupId>io.github.resilience4j</groupId>
@@ -131,8 +120,8 @@
         <pluginManagement>
             <plugins>
                 <!-- Compiler: explicit Lombok annotation processor path for JDK 17-25.
-                     Spring Boot 4.1.0's parent BOM doesn't expose lombok.version as a
-                     property, so the version is pinned explicitly here. -->
+                Spring Boot 4.1.0's parent BOM doesn't expose lombok.version as a
+                property, so the version is pinned explicitly here. -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>

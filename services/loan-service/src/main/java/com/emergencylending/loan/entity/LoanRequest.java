@@ -13,7 +13,7 @@ import java.time.Instant;
 /**
  * JPA entity representing a loan request for a piece of emergency equipment.
  *
- * <p>Persisted to the {@code loan_db} PostgreSQL database.
+ * <p>Persisted to the {@code loan_db} MySQL 8.x database.
  * Owned entirely by loan-service (database-per-service pattern).
  */
 @Entity

@@ -17,10 +17,10 @@ spring:
   # Datasource — values overridden by config-server for the active profile.
   # These fallback values allow local startup without config-server.
   datasource:
-    url: ${INVENTORY_DB_URL:jdbc:postgresql://localhost:5432/inventory_db}
+    url: ${INVENTORY_DB_URL:jdbc:mysql://localhost:3306/inventory_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
     username: ${INVENTORY_DB_USER:inventory_user}
     password: ${INVENTORY_DB_PASS:inventory_pass}
-    driver-class-name: org.postgresql.Driver
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: update
@@ -28,7 +28,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.MySQLDialect
 
 eureka:
   client:

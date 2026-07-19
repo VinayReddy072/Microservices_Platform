@@ -24,7 +24,7 @@
         <!-- Spring Cloud Gateway (reactive — do NOT add spring-boot-starter-web) -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-gateway</artifactId>
+            <artifactId>spring-cloud-starter-gateway-server-webflux</artifactId>
         </dependency>
         <!-- Eureka Client — discovers lb:// targets from the registry -->
         <dependency>

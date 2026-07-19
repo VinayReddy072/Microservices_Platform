@@ -1,24 +1,6 @@
-# ============================================================
-# Shared application config — applied to ALL services before
-# their own service-specific file is merged on top.
-# ============================================================
 
-# Spring Boot Actuator — expose endpoints needed for health checks,
-# circuit-breaker inspection, and service metrics.
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health, info, metrics, circuitbreakers, circuitbreakerevents, retries
-  endpoint:
-    health:
-      show-details: always
-  health:
-    circuitbreakers:
-      enabled: true
 
-# Eureka client defaults — all services point to the same registry.
-# Individual service application.yml files inherit this and can override.
+# Eureka client defaults
 eureka:
   client:
     service-url:
@@ -28,9 +10,20 @@ eureka:
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 30
 
-# Tracing sampling — placeholder for Days 9-10 (OpenTelemetry/Zipkin).
-# Set to 0.0 now so no tracing infra is required in Days 1-5.
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, circuitbreakers, circuitbreakerevents, retries
+
+  endpoint:
+    health:
+      show-details: always
+
+  health:
+    circuitbreakers:
+      enabled: true
+
   tracing:
     sampling:
       probability: 0.0

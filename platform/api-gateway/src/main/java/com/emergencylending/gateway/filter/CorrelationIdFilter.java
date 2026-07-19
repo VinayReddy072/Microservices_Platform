@@ -6,31 +6,12 @@ import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
-/**
- * CorrelationIdFilter — Global Gateway Filter (Days 1–5)
- *
- * <p>Satisfies the "at least one Gateway filter" rubric requirement and provides
- * distributed tracing groundwork ahead of the OpenTelemetry/Zipkin integration
- * in Days 9–10.
- *
- * <p>Behaviour per request:
- * <ol>
- *   <li>Reads {@code X-Correlation-Id} from the inbound request header.</li>
- *   <li>If absent, generates a new UUID4 as the correlation ID.</li>
- *   <li>Mutates the forwarded request to include the correlation ID so
- *       downstream services receive it.</li>
- *   <li>Adds the same header to the outbound response so clients can correlate
- *       their request to server-side logs.</li>
- *   <li>Logs the method, URI, and correlation ID at INFO level.</li>
- * </ol>
- */
 @Component
 public class CorrelationIdFilter implements GlobalFilter, Ordered {
 
@@ -39,42 +20,40 @@ public class CorrelationIdFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        ServerHttpRequest request = exchange.getRequest();
 
-        // Propagate existing ID or generate a fresh one
-        String correlationId = request.getHeaders().getFirst(CORRELATION_ID_HEADER);
-        if (correlationId == null || correlationId.isBlank()) {
-            correlationId = UUID.randomUUID().toString();
-        }
+        String correlationIdInput = exchange.getRequest()
+                .getHeaders()
+                .getFirst(CORRELATION_ID_HEADER);
 
-        final String finalCorrelationId = correlationId;
+        final String correlationId = (correlationIdInput == null || correlationIdInput.isBlank())
+                ? UUID.randomUUID().toString()
+                : correlationIdInput;
 
-        log.info("Incoming request: {} {} correlationId={}",
-                request.getMethod(),
-                request.getURI().getPath(),
-                finalCorrelationId);
-
-        // Forward the correlation ID to the downstream service
-        ServerHttpRequest mutatedRequest = request.mutate()
-                .header(CORRELATION_ID_HEADER, finalCorrelationId)
+        ServerHttpRequest mutatedRequest = exchange.getRequest()
+                .mutate()
+                .header(CORRELATION_ID_HEADER, correlationId)
                 .build();
 
-        // Add the correlation ID to the response so the calling client sees it
         ServerWebExchange mutatedExchange = exchange.mutate()
                 .request(mutatedRequest)
                 .build();
 
-        return chain.filter(mutatedExchange)
-                .then(Mono.fromRunnable(() -> {
-                    ServerHttpResponse response = mutatedExchange.getResponse();
-                    response.getHeaders().add(CORRELATION_ID_HEADER, finalCorrelationId);
-                }));
+        // Add the response header BEFORE the response is committed
+        mutatedExchange.getResponse().beforeCommit(() -> {
+            mutatedExchange.getResponse()
+                    .getHeaders()
+                    .set(CORRELATION_ID_HEADER, correlationId);
+            return Mono.empty();
+        });
+
+        log.info("Incoming request: {} {} correlationId={}",
+                mutatedRequest.getMethod(),
+                mutatedRequest.getURI().getPath(),
+                correlationId);
+
+        return chain.filter(mutatedExchange);
     }
 
-    /**
-     * Run before other filters (lowest order value = highest precedence).
-     * Ensures the correlation ID is set before any routing or authentication filter runs.
-     */
     @Override
     public int getOrder() {
         return Ordered.HIGHEST_PRECEDENCE;
