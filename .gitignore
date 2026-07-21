@@ -17,6 +17,7 @@ target/
 # Logs
 *.log
 logs/
+build-output.txt
 
 # Maven wrapper (keep .mvn directory but not wrapper jar binaries)
 !.mvn/wrapper/maven-wrapper.properties
