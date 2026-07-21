@@ -4,7 +4,6 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- Two levels up: platform/api-gateway → platform → root -->
     <parent>
         <groupId>com.emergencylending</groupId>
         <artifactId>emergency-equipment-lending-platform</artifactId>
@@ -18,23 +17,39 @@
         Reactive Spring Cloud Gateway — single entry point for all external traffic.
         Routes /api/loans/** to loan-service and /api/equipment/** to inventory-service.
         Adds X-Correlation-Id to every request via CorrelationIdFilter.
+        Enforces JWT authentication and role-based access control.
     </description>
 
     <dependencies>
-        <!-- Spring Cloud Gateway (reactive — do NOT add spring-boot-starter-web) -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-gateway-server-webflux</artifactId>
         </dependency>
-        <!-- Eureka Client — discovers lb:// targets from the registry -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
         </dependency>
-        <!-- Load Balancer — resolves lb:// URIs to actual instances -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <scope>runtime</scope>
         </dependency>
     </dependencies>
 

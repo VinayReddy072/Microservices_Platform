@@ -10,10 +10,9 @@ target/
 *.swo
 *.DS_Store
 
-# Environment / secrets 
+# Environment / secrets — real values never committed
 .env
-*.env
-.env.*
+.env.local
 
 # Logs
 *.log
@@ -27,5 +26,3 @@ logs/
 Thumbs.db
 ehthumbs.db
 Desktop.ini
-
-ReadMe.md

@@ -5,6 +5,9 @@ import com.emergencylending.loan.dto.EquipmentAvailabilityDto;
 import com.emergencylending.loan.dto.LoanRequestCreateDto;
 import com.emergencylending.loan.entity.LoanRequest;
 import com.emergencylending.loan.entity.LoanStatus;
+import com.emergencylending.loan.event.LoanApprovedEvent;
+import com.emergencylending.loan.event.LoanItemReturnedEvent;
+import com.emergencylending.loan.messaging.LoanEventPublisher;
 import com.emergencylending.loan.repository.LoanRequestRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -16,18 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 
-/**
- * Business logic layer for loan request management.
- *
- * <p>The {@link #approve(Long)} method is the key integration point in this phase:
- * it calls inventory-service synchronously via {@link InventoryAvailabilityAdapter}
- * (which adds the four-layer resilience stack) before transitioning the loan to APPROVED.
- *
- * <p>TODO (Days 7-8): Publish a {@code LoanApprovedEvent} to RabbitMQ inside
- *   {@link #approve(Long)} after persisting the APPROVED status, so inventory-service
- *   can asynchronously transition the equipment to ON_LOAN status.
- *   Similarly publish a {@code LoanReturnedEvent} inside {@link #returnLoan(Long)}.
- */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -37,8 +28,7 @@ public class LoanRequestService {
 
     private final LoanRequestRepository repository;
     private final InventoryAvailabilityAdapter inventoryAdapter;
-
-    // ── Read operations ──────────────────────────────────────────────────────
+    private final LoanEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public List<LoanRequest> findAll() {
@@ -51,14 +41,11 @@ public class LoanRequestService {
                 .orElseThrow(() -> new EntityNotFoundException("LoanRequest not found: " + id));
     }
 
-    // ── Write operations ─────────────────────────────────────────────────────
-
     public LoanRequest create(LoanRequestCreateDto dto) {
         LoanRequest request = LoanRequest.builder()
                 .equipmentItemId(dto.getEquipmentItemId())
                 .borrowerName(dto.getBorrowerName())
                 .borrowerContact(dto.getBorrowerContact())
-                // status defaults to PENDING via @Builder.Default in entity
                 .build();
         LoanRequest saved = repository.save(request);
         log.info("Created LoanRequest id={} for equipmentItemId={} by borrower={}",
@@ -69,10 +56,15 @@ public class LoanRequestService {
     /**
      * Approve a pending loan request.
      *
-     * <p>Before approving, calls inventory-service via the resilience adapter to
-     * confirm the equipment is available. If the equipment is NOT available, the
-     * loan is rejected. If the adapter's fallback fires (inventory-service unreachable),
-     * the loan is provisionally approved and a warning is logged.
+     * <p>Calls inventory-service synchronously via the resilience adapter to confirm
+     * the equipment is available before transitioning to APPROVED. If the adapter's
+     * fallback fires (inventory-service unreachable), the loan is provisionally approved
+     * and a warning is logged so operations staff can verify manually.
+     *
+     * <p>After a successful APPROVED save, publishes {@link LoanApprovedEvent} to the
+     * loan.events exchange so inventory-service can asynchronously mark the item ON_LOAN.
+     * The event is published after the DB commit to avoid publishing an event for a
+     * transaction that subsequently rolled back.
      *
      * @param id loan request ID
      * @return updated LoanRequest with APPROVED or REJECTED status
@@ -87,7 +79,6 @@ public class LoanRequestService {
                     "Cannot approve loan " + id + " — current status is " + loan.getStatus());
         }
 
-        // Call inventory-service (with retry + circuit-breaker + fallback)
         EquipmentAvailabilityDto availability =
                 inventoryAdapter.checkAvailability(loan.getEquipmentItemId());
 
@@ -97,22 +88,25 @@ public class LoanRequestService {
         if (availability.isAvailable()) {
             loan.setStatus(LoanStatus.APPROVED);
             loan.setApprovedAt(Instant.now());
+            LoanRequest saved = repository.save(loan);
             log.info("LoanRequest id={} APPROVED", id);
 
-            // TODO (Days 7-8): publish LoanApprovedEvent to RabbitMQ here
-            // rabbitTemplate.convertAndSend("loan.exchange", "loan.approved",
-            //     new LoanApprovedEvent(loan.getId(), loan.getEquipmentItemId()));
+            eventPublisher.publishApproved(
+                    new LoanApprovedEvent(saved.getId(), saved.getEquipmentItemId(), saved.getApprovedAt()));
+            return saved;
         } else {
             loan.setStatus(LoanStatus.REJECTED);
             log.info("LoanRequest id={} REJECTED — equipment {} is not available (status: {})",
                     id, loan.getEquipmentItemId(), availability.getStatus());
+            return repository.save(loan);
         }
-
-        return repository.save(loan);
     }
 
     /**
      * Mark a loan as returned.
+     *
+     * <p>After persisting RETURNED status, publishes {@link LoanItemReturnedEvent}
+     * so inventory-service can asynchronously mark the equipment AVAILABLE again.
      *
      * @param id loan request ID
      * @return updated LoanRequest with RETURNED status
@@ -129,17 +123,16 @@ public class LoanRequestService {
 
         loan.setStatus(LoanStatus.RETURNED);
         loan.setReturnedAt(Instant.now());
+        LoanRequest saved = repository.save(loan);
         log.info("LoanRequest id={} RETURNED", id);
 
-        // TODO (Days 7-8): publish LoanReturnedEvent to RabbitMQ here
-        // rabbitTemplate.convertAndSend("loan.exchange", "loan.returned",
-        //     new LoanReturnedEvent(loan.getId(), loan.getEquipmentItemId()));
-
-        return repository.save(loan);
+        eventPublisher.publishReturned(
+                new LoanItemReturnedEvent(saved.getId(), saved.getEquipmentItemId(), saved.getReturnedAt()));
+        return saved;
     }
 
     public void delete(Long id) {
-        findById(id); // Verify existence before deleting
+        findById(id);
         repository.deleteById(id);
         log.info("LoanRequest id={} deleted", id);
     }

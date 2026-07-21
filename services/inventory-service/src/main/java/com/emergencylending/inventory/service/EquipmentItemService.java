@@ -7,25 +7,21 @@ import com.emergencylending.inventory.entity.EquipmentStatus;
 import com.emergencylending.inventory.repository.EquipmentItemRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * Business logic layer for {@link EquipmentItem} management.
- *
- * <p>Keeps all persistence logic here and out of the controller,
- * following the standard service/controller/repository layering.
- */
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class EquipmentItemService {
 
-    private final EquipmentItemRepository repository;
+    private static final Logger log = LoggerFactory.getLogger(EquipmentItemService.class);
 
-    // ── Read operations ──────────────────────────────────────────────────────
+    private final EquipmentItemRepository repository;
 
     @Transactional(readOnly = true)
     public List<EquipmentItem> findAll() {
@@ -53,15 +49,12 @@ public class EquipmentItemService {
         return new EquipmentAvailabilityDto(item.getId(), available, item.getStatus());
     }
 
-    // ── Write operations ─────────────────────────────────────────────────────
-
     public EquipmentItem create(EquipmentItemCreateDto dto) {
         EquipmentItem item = EquipmentItem.builder()
                 .name(dto.getName())
                 .category(dto.getCategory())
                 .location(dto.getLocation())
                 .conditionNotes(dto.getConditionNotes())
-                // status defaults to AVAILABLE via @Builder.Default in entity
                 .build();
         return repository.save(item);
     }
@@ -72,13 +65,27 @@ public class EquipmentItemService {
         existing.setCategory(dto.getCategory());
         existing.setLocation(dto.getLocation());
         existing.setConditionNotes(dto.getConditionNotes());
-        // Note: status is NOT updated via this endpoint — use a dedicated
-        // status-transition endpoint or (Days 7-8) a RabbitMQ event.
         return repository.save(existing);
     }
 
+    /**
+     * Transitions an equipment item to a new status. Called exclusively by
+     * {@link com.emergencylending.inventory.messaging.LoanEventListener} — status
+     * changes are driven by RabbitMQ events from loan-service, not by direct REST calls.
+     *
+     * @param id        equipment item ID
+     * @param newStatus target status
+     * @throws EntityNotFoundException if no item with the given ID exists
+     */
+    public void updateStatus(Long id, EquipmentStatus newStatus) {
+        EquipmentItem item = findById(id);
+        EquipmentStatus previous = item.getStatus();
+        item.setStatus(newStatus);
+        repository.save(item);
+        log.info("Equipment id={} status {} → {}", id, previous, newStatus);
+    }
+
     public void delete(Long id) {
-        // Verify existence before deleting so we return 404 for unknown IDs
         findById(id);
         repository.deleteById(id);
     }

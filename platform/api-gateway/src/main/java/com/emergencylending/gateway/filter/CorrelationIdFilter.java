@@ -2,24 +2,36 @@ package com.emergencylending.gateway.filter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.cloud.gateway.filter.GatewayFilterChain;
-import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
+import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
+/**
+ * Adds X-Correlation-Id to every request and response, generating a UUID if none arrives
+ * in the incoming request headers.
+ *
+ * <p>Implemented as a {@link WebFilter} at {@code HIGHEST_PRECEDENCE} rather than a
+ * Spring Cloud Gateway {@code GlobalFilter} so that it runs for ALL requests — including
+ * those rejected by {@link com.emergencylending.gateway.security.JwtAuthenticationFilter}
+ * with a 401 or 403 before the gateway routing pipeline even starts. A GlobalFilter
+ * would only run inside the gateway's routing pipeline, which is skipped for rejected requests.
+ */
 @Component
-public class CorrelationIdFilter implements GlobalFilter, Ordered {
+@Order(Ordered.HIGHEST_PRECEDENCE)
+public class CorrelationIdFilter implements WebFilter {
 
     private static final Logger log = LoggerFactory.getLogger(CorrelationIdFilter.class);
     private static final String CORRELATION_ID_HEADER = "X-Correlation-Id";
 
     @Override
-    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
 
         String correlationIdInput = exchange.getRequest()
                 .getHeaders()
@@ -38,7 +50,6 @@ public class CorrelationIdFilter implements GlobalFilter, Ordered {
                 .request(mutatedRequest)
                 .build();
 
-        // Add the response header BEFORE the response is committed
         mutatedExchange.getResponse().beforeCommit(() -> {
             mutatedExchange.getResponse()
                     .getHeaders()
@@ -52,10 +63,5 @@ public class CorrelationIdFilter implements GlobalFilter, Ordered {
                 correlationId);
 
         return chain.filter(mutatedExchange);
-    }
-
-    @Override
-    public int getOrder() {
-        return Ordered.HIGHEST_PRECEDENCE;
     }
 }

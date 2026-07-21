@@ -31,13 +31,15 @@ spring:
               filters:
                 - RewritePath=/api/loans(?<segment>/?.*), /loans${segment}
 
+jwt:
+  secret: ${JWT_SECRET}
+
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
     register-with-eureka: true
     fetch-registry: true
-
   instance:
     prefer-ip-address: true
 
@@ -45,7 +47,6 @@ management:
   endpoint:
     gateway:
       access: unrestricted
-
   endpoints:
     web:
       exposure:

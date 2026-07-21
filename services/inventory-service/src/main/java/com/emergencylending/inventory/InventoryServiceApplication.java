@@ -20,8 +20,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  *   <li>GET    /equipment/{id}/availability — availability check (called by loan-service Feign)</li>
  * </ul>
  *
- * <p>TODO (Days 7-8): Add RabbitMQ consumer that listens for LoanApprovedEvent
- *   messages and transitions EquipmentItem status from AVAILABLE → ON_LOAN.
+ * <p>Status transitions (AVAILABLE ↔ ON_LOAN) are driven by RabbitMQ events from
+ * loan-service via {@link com.emergencylending.inventory.messaging.LoanEventListener}.
  */
 @SpringBootApplication
 public class InventoryServiceApplication {

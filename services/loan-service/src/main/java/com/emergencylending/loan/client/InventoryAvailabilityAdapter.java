@@ -43,9 +43,6 @@ import org.springframework.stereotype.Component;
  *       blocking all loans during a transient inventory outage is worse than
  *       provisionally approving a few extra loans.</li>
  * </ol>
- *
- * <p>TODO (Days 7-8): Replace provisional approval with a RabbitMQ event-driven
- *   reconciliation mechanism once the messaging infrastructure is in place.
  */
 @Component
 @RequiredArgsConstructor

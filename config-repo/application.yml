@@ -1,6 +1,5 @@
 
 
-# Eureka client defaults
 eureka:
   client:
     service-url:
@@ -10,20 +9,24 @@ eureka:
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 30
 
+spring:
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: 5672
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
 management:
   endpoints:
     web:
       exposure:
         include: health, info, metrics, circuitbreakers, circuitbreakerevents, retries
-
   endpoint:
     health:
       show-details: always
-
   health:
     circuitbreakers:
       enabled: true
-
   tracing:
     sampling:
       probability: 0.0
