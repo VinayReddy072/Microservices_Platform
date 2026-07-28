@@ -15,12 +15,20 @@ spring:
     port: 5672
     username: ${RABBITMQ_USER:guest}
     password: ${RABBITMQ_PASSWORD:guest}
+    template:
+      observation-enabled: true
+    listener:
+      simple:
+        # Propagates the active trace context into each consumed message's thread.
+        # Without this the span that starts in loan-service when it publishes a
+        # LoanApprovedEvent has no link to the LoanEventListener span in inventory-service.
+        observation-enabled: true
 
 management:
   endpoints:
     web:
       exposure:
-        include: health, info, metrics, circuitbreakers, circuitbreakerevents, retries
+        include: health, info, metrics, circuitbreakers, circuitbreakerevents, retries, tracing
   endpoint:
     health:
       show-details: always
@@ -29,4 +37,11 @@ management:
       enabled: true
   tracing:
     sampling:
-      probability: 0.0
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}]"
