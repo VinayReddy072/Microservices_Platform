@@ -2,6 +2,7 @@
 ## Technical Report - Microservices Architecture Assignment
 
 | **Student Name** | Thalla Vinay Reddy |
+| :--- | :--- |
 | **Student ID** | 22FA081016 |
 | **Module** | Microservices Architecture |
 | **Repository** | `https://github.com/VinayReddy072/Microservices_Platform` |
