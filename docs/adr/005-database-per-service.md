@@ -115,10 +115,10 @@ No `PUT /equipment/{id}/status` endpoint exists. The only path by which `equipme
 
 ## Report Evidence
 
-- **Verification Report §4** - `inventory_db.equipment_items` live table (6 rows)
-- **Verification Report §5** - `loan_db.loan_requests` live table (6 rows)
-- **Verification Report §9.4** - Equipment status updated by RabbitMQ event, not REST
-- **Verification Report §8.1** - Feign call as the only cross-service read pathway
+- `inventory_db.equipment_items` live table (6 rows)
+- `loan_db.loan_requests` live table (6 rows)
+- Equipment status updated by RabbitMQ event, not REST
+- Feign call as the only cross-service read pathway
 
 ## Screencast Timestamps
 
