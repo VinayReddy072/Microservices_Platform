@@ -1,8 +1,6 @@
 # Emergency Equipment Lending Platform
 ## Technical Report - Microservices Architecture Assignment
 
-| Field | Detail |
-| :--- | :--- |
 | **Student Name** | Thalla Vinay Reddy |
 | **Student ID** | 22FA081016 |
 | **Module** | Microservices Architecture |
@@ -1104,34 +1102,25 @@ Microservices_Platform/
 │   │   ├── 003-resilience-and-failure-handling.md
 │   │   ├── 004-service-discovery-and-config.md
 │   │   └── 005-database-per-service.md
-│   ├── verification-report.md
-│   └── _FinalReport.md          (this document)
+│   ├── images/
+│   └── Report.md          
 ├── .env                      Environment variables (gitignored)
 ├── .gitignore
 ├── pom.xml                   Multi-module parent POM
-└── ReadMe.md                 Full startup guide, SQL, curl examples
+└── ReadMe.md                 Full startup guide, SQL
 ```
 
-**Commit history:** Twelve commits representing incremental development milestones — initial module structure, infrastructure services (Eureka, Config), domain service REST and JPA layers, API Gateway and security, service-to-service communication and resilience, RabbitMQ integration, observability, and documentation.
+The repository contains **13 incremental commits** that document the project's development lifecycle from the initial scaffold to the final verified submission.
 
-**README (`ReadMe.md`):** Contains full startup sequence, MySQL provisioning SQL, environment variable setup, comprehensive curl examples for every endpoint, architecture diagram (Mermaid), and assignment rubric quick-navigation table.
-
-**Environment separation:**
-
-| Profile | Key difference | Verified by |
-| :--- | :--- | :--- |
-| `dev` | `ddl-auto=update`, `show-sql=true`, Feign FULL logging | `curl http://localhost:8888/loan-service/dev` |
-| `production` | `ddl-auto=validate`, `show-sql=false` | `curl http://localhost:8888/loan-service/production` |
-
-**Database isolation:** Two dedicated MySQL schemas with separate credentials enforced at MySQL permission level:
-
-| Service | Database | User | Tables |
-| :--- | :--- | :--- | :--- |
-| loan-service | `loan_db` | `loan_user` | `loan_requests` |
-| inventory-service | `inventory_db` | `inventory_user` | `equipment_items` |
-
-`loan_user` has no privileges on `inventory_db` and vice versa. Cross-service data access uses REST API (Feign) or RabbitMQ events only — never shared SQL.
+| Date | Development Milestone |
+|------|------------------------|
+| **12 Jul 2026** | Built initial Eureka Server and API Gateway scaffold with basic routing infrastructure. |
+| **13 Jul 2026** | Updated project build configuration and overall project structure. |
+| **19 Jul 2026** | Implemented Inventory Service and Loan Service with REST controllers, Spring Data JPA, MySQL integration, Eureka registration, and Gateway routing. |
+| **21 Jul 2026** | Added JWT authentication and authorization, API Gateway security filters, RabbitMQ asynchronous messaging, and event-driven communication between services. |
+| **28 Jul 2026** | Integrated distributed tracing configuration and added architecture documentation for the implemented design decisions. |
+| **31 Jul 2026** | Refined architecture decisions including Database-per-Service, Eureka & Config Server integration, RabbitMQ messaging configuration, JWT filter ordering, Resilience4J configuration, and distributed tracing improvements. |
+| **02 Aug 2026** | Expanded project documentation, verification evidence, deployment instructions, and implementation details. |
+| **05 Aug 2026** | Finalized README, technical documentation, verification report, implementation evidence, and overall project cleanup for submission. |
 
 ---
-
-*End of report.*
