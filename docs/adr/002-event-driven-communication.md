@@ -17,7 +17,7 @@ The status update after approval is structurally different. Its result does not 
 2. Two synchronous HTTP calls in sequence double the failure surface on the critical approval path.
 3. Inventory Service becomes a blocker for two distinct loan approval concerns (read: availability check; write: status update) rather than one.
 
-The key distinction is **same-request answer vs. side effect**:
+The **same-request answer vs. side effect**:
 
 | Interaction | Must be same-request? | Rationale |
 |-------------|----------------------|-----------|
@@ -34,8 +34,8 @@ Equipment status changes are communicated asynchronously via a RabbitMQ topic ex
 |---------|------|
 | Exchange | `loan.events` (TopicExchange, durable) |
 | Queue | `inventory.loan-events` (durable, bound to exchange) |
-| Routing key — approval | `loan.approved` |
-| Routing key — return | `loan.returned` |
+| Routing key - approval | `loan.approved` |
+| Routing key - return | `loan.returned` |
 | Consumer queue | `inventory.loan-events` (single consumer: `LoanEventListener`) |
 
 **Binding configuration (`services/inventory-service/.../config/RabbitMqConfig.java`):**
@@ -92,22 +92,23 @@ The two services share zero code. Each holds its own copy of the event record wi
 Equipment status changes driven entirely by RabbitMQ — no REST call to `PUT /equipment/{id}/status` exists anywhere in the codebase:
 
 | Equipment Item | Status | Driven by |
-|---------------|--------|-----------|
-| 1 — Portable Defibrillator | ON_LOAN | Loan 1 (Alice Smith, 2026-07-19), loan.approved event |
-| 2 — Oxygen Cylinder | ON_LOAN | Loan 2 (John Doe, 2026-07-20), loan.approved event |
-| 4 — EMS Resuscitation Kit | ON_LOAN | Loan 3 (2026-07-27), loan.approved event |
-| 6 — AED Unit | ON_LOAN | Loan 6 (Trace Tester, 2026-07-28), loan.approved event |
-| 3, 5 | AVAILABLE | Never loaned, or loan rejected |
+|----------------|--------|-----------|
+| 1 - Portable Defibrillator | ON_LOAN | Loan 1 (Alice Smith, 2026-07-19), `loan.approved` event |
+| 2 - Oxygen Cylinder | ON_LOAN | Loan 2 (John Doe, 2026-07-20), `loan.approved` event |
+| 3 - Portable Oxygen Cylinder | AVAILABLE | Never loaned, or loan rejected |
+| 4 - EMS Resuscitation Kit | ON_LOAN | Loan 3, `loan.approved` event |
+| 6 - AED Unit | ON_LOAN | Loan 6 (Trace Tester), `loan.approved` event |
+| 8 - Ultrasound Machine | ON_LOAN | (Trace Tester), `loan.approved` event  |
 
 ## Alternatives Considered
 
-**Synchronous `PUT /equipment/{id}/status`** — rejected. The approval HTTP response would block until Inventory Service acknowledges the status update. An inventory-service restart during peak demand blocks all loan approvals for the restart duration. Two synchronous calls in sequence also means two independent failure points on the same critical path.
+**Synchronous `PUT /equipment/{id}/status`** - rejected. The approval HTTP response would block until Inventory Service acknowledges the status update. An inventory-service restart during peak demand blocks all loan approvals for the restart duration. Two synchronous calls in sequence also means two independent failure points on the same critical path.
 
-**Shared event library JAR** — a common `LoanApprovedEvent` class shared between services. Rejected because it creates compile-time coupling: both services must be rebuilt and redeployed simultaneously whenever the event schema changes. Schema independence is preserved by each service defining its own record with matching JSON field names.
+**Shared event library JAR** - a common `LoanApprovedEvent` class shared between services. Rejected because it creates compile-time coupling: both services must be rebuilt and redeployed simultaneously whenever the event schema changes. Schema independence is preserved by each service defining its own record with matching JSON field names.
 
-**Spring Cloud Stream** — higher-level abstraction over RabbitMQ/Kafka. Evaluated but not chosen: for two services and two event types, using `spring-amqp` directly makes the exchange name, routing key, and queue name explicit in code and configuration. Spring Cloud Stream's functional model would hide this detail without adding value at this scale.
+**Spring Cloud Stream** - higher-level abstraction over RabbitMQ/Kafka. Evaluated but not chosen: for two services and two event types, using `spring-amqp` directly makes the exchange name, routing key, and queue name explicit in code and configuration. Spring Cloud Stream's functional model would hide this detail without adding value at this scale.
 
-**Outbox pattern** — would guarantee delivery by storing the event in the same transaction as the loan record before publishing to RabbitMQ. Not applied: RabbitMQ's durable queue buffers messages across Inventory Service restarts, and the explicit WARN log from the circuit-breaker fallback alerts operations staff. Accepted as sufficient for this scope.
+**Outbox pattern** - would guarantee delivery by storing the event in the same transaction as the loan record before publishing to RabbitMQ. Not applied: RabbitMQ's durable queue buffers messages across Inventory Service restarts, and the explicit WARN log from the circuit-breaker fallback alerts operations staff. Accepted as sufficient for this scope.
 
 ## Consequences
 
@@ -124,13 +125,13 @@ Equipment status changes driven entirely by RabbitMQ — no REST call to `PUT /e
 | `services/inventory-service/.../messaging/LoanEventListener.java` | `@RabbitListener(queues = "inventory.loan-events")`, routes on `receivedRoutingKey` |
 | `config-repo/application.yml` | `spring.rabbitmq.template.observation-enabled: true`, `listener.simple.observation-enabled: true` |
 
-## Report Evidence — Verification Report §9
+## Report:
 
-- Full event flow with log evidence: `Equipment 6 → ON_LOAN (loan request 6)`
-- Live equipment table showing items 1, 2, 4, 6 as ON_LOAN — state driven by RabbitMQ, confirmed by absence of any REST PUT to inventory
+- Full event flow with log evidence: `Equipment 8 → ON_LOAN (loan request 7)`
+- Live equipment table showing items 1, 2, 4, 6, 8 as ON_LOAN - state driven by RabbitMQ, confirmed by absence of any REST PUT to inventory
 
 ## Screencast Timestamps
 
-- `[00:XX:XX]` — equipment item 6 at AVAILABLE before approval
-- `[00:XX:XX]` — approve loan 6; inventory-service log: `Equipment 6 → ON_LOAN`
-- `[00:XX:XX]` — RabbitMQ Management UI showing `loan.events` exchange with two bindings
+- `[00:16:05]` - equipment item 8 at AVAILABLE before approval
+- `[00:16:45]` - approve loan 8; inventory-service log: `Equipment 8 → ON_LOAN`
+- `[00:21:00]` - RabbitMQ Management UI showing `loan.events` exchange with two bindings

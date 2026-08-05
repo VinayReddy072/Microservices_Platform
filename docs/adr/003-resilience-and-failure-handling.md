@@ -13,7 +13,7 @@ The platform routes every client request through five processes. When a request 
 
 ## Decision
 
-### Part 1 — OpenFeign + Resilience4J Stack
+### Part 1 - OpenFeign + Resilience4J Stack
 
 The synchronous Inventory Service call is wrapped in a four-layer resilience stack inside `InventoryAvailabilityAdapter`, a concrete Spring `@Component` bean. The layers cannot be applied directly to the Feign interface because Resilience4J annotations require a Spring AOP proxy on a concrete bean, not on an interface.
 
@@ -46,7 +46,7 @@ resilience4j:
         permitted-number-of-calls-in-half-open-state: 2
 ```
 
-**Layer 4 — Fallback (the critical business decision):**
+**Layer 4 - Fallback (the critical business decision):**
 
 ```java
 // services/loan-service/.../client/InventoryAvailabilityAdapter.java
@@ -67,7 +67,7 @@ public EquipmentAvailabilityDto checkAvailabilityFallback(Long equipmentItemId, 
 
 Note on retry scope: `@Retry` retries only on `IOException` and `RetryableException` (transport-level failures). Business responses — such as Inventory Service correctly returning `available=false` for an `ON_LOAN` item — are not retried. **Loan 5 in the live data (`status: REJECTED`) is evidence of this:** the Feign call succeeded, returned `available=false` for item 1 (already on loan), and the loan was correctly rejected without the fallback firing.
 
-### Part 2 — Distributed Tracing with OpenTelemetry and Zipkin
+### Part 2 - Distributed Tracing with OpenTelemetry and Zipkin
 
 **Why manual configuration is required:** Spring Boot 4.x does not auto-configure the Micrometer OTel bridge from `spring-boot-starter-actuator` alone. `TracingConfig.java` (present in api-gateway, loan-service, inventory-service) manually wires `OpenTelemetrySdk` → `ZipkinSpanExporter` → `OtelTracer` → `DefaultTracingObservationHandler`. This is the correct and fully supported approach for Spring Boot 4.x.
 
@@ -122,9 +122,9 @@ INFO [inventory-service,4f2e1a3b9c7d8e0f,9b8c7d6e] LoanEventListener - Equipment
 
 ## Alternatives Considered
 
-**No fallback — fail fast:** The circuit breaker would propagate a `CallNotPermittedException` as HTTP 500 to the client. Every loan approval attempt during an Inventory Service outage would fail. Rejected: in emergency equipment lending, a transient outage should not freeze loan approvals.
+**No fallback - fail fast:** The circuit breaker would propagate a `CallNotPermittedException` as HTTP 500 to the client. Every loan approval attempt during an Inventory Service outage would fail. Rejected: in emergency equipment lending, a transient outage should not freeze loan approvals.
 
-**Bulkhead isolation:** Would isolate the Feign thread pool so inventory-service failures cannot saturate the loan-service thread pool. Not applied at this stage — unnecessary at current scale but documented as a future hardening step.
+**Bulkhead isolation:** Would isolate the Feign thread pool so inventory-service failures cannot saturate the loan-service thread pool. Not applied at this stage - unnecessary at current scale but documented as a future hardening step.
 
 **Jaeger instead of Zipkin:** Jaeger is more feature-rich (OTLP native, richer storage options). Rejected for this context because Zipkin requires zero configuration to start.
 
@@ -150,17 +150,16 @@ INFO [inventory-service,4f2e1a3b9c7d8e0f,9b8c7d6e] LoanEventListener - Equipment
 
 ## Report Evidence
 
-- **Verification Report §8.1** — Normal path: loan 6 approved via live Feign call, `available=true`
-- **Verification Report §8.2** — Loan 5 REJECTED: Feign returned `available=false` for ON_LOAN item 1 — confirms `@Retry` does not retry business responses
-- **Verification Report §8.3** — Fallback path: circuit-breaker WARN log; actuator showing `state: OPEN`
-- **Verification Report §10.1** — Zipkin services: `["api-gateway","inventory-service","loan-service"]`
-- **Verification Report §10.2** — Zipkin waterfall: 6 spans across 3 services for `PUT /api/loans/6/approve`
-- **Verification Report §10.3** — Log excerpt with matching `traceId` across loan-service and inventory-service
+- **Verification Report §8.1** - Normal path: loan 8 approved via live Feign call, `available=true`
+- **Verification Report §8.2** - Loan 5 REJECTED: Feign returned `available=false` for ON_LOAN item 1 — confirms `@Retry` does not retry business responses
+- **Verification Report §8.3** - Fallback path: circuit-breaker WARN log; actuator showing `state: OPEN`
+- **Verification Report §10.1** - Zipkin services: `["api-gateway","inventory-service","loan-service"]`
+- **Verification Report §10.2** - Zipkin 6 spans across 3 services for `PUT /api/loans/6/approve`
+- **Verification Report §10.3** - Log excerpt with matching `traceId` across loan-service and inventory-service
 
 ## Screencast Timestamps
 
-- `[00:XX:XX]` — Approve loan 6: Feign debug log → `available=true` → approved
-- `[00:XX:XX]` — Approve with item 1 ON_LOAN → REJECTED (no fallback, correct)
-- `[00:XX:XX]` — Stop inventory-service → WARN fallback log → actuator circuitbreakers → OPEN
-- `[00:XX:XX]` — Zipkin Run Query → waterfall showing gateway → loan → inventory
-- `[00:XX:XX]` — Zipkin Dependencies tab → service topology diagram
+- `[00:16:55]` — Approve with item 5 ON_LOAN → REJECTED (no fallback, correct)
+- `[00:18:13]` — Stop inventory-service → WARN fallback log → actuator circuitbreakers → OPEN
+- `[00:21:56]` — Zipkin Run Query → showing gateway
+

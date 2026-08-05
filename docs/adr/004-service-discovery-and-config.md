@@ -1,4 +1,4 @@
-# ADR 004 — Service Discovery and Centralised Configuration
+# ADR 004 - Service Discovery and Centralised Configuration
 
 ## Status
 Accepted
@@ -13,7 +13,7 @@ The platform deploys five Spring Boot processes across specific ports. Two separ
 
 ## Decision
 
-### Part 1 — Eureka Service Discovery
+### Part 1 - Eureka Service Discovery
 
 Spring Cloud Netflix Eureka is deployed as `platform/eureka-server/` on port 8761. All five processes register at startup and heartbeat every 10 seconds. The API Gateway and Loan Service resolve downstream addresses using `lb://` (load-balanced) URIs, which Spring Cloud LoadBalancer resolves against the Eureka registry at call time.
 
@@ -86,7 +86,7 @@ public interface InventoryClient {
 
 No hardcoded `http://localhost:8082` appears anywhere in the codebase.
 
-### Part 2 — Spring Cloud Config
+### Part 2 - Spring Cloud Config
 
 Config Server is deployed as `platform/config-server/` on port 8888 using the native filesystem backend pointing at `config-repo/`. Each service pulls configuration at startup via `spring.config.import: "optional:configserver:http://localhost:8888"`. The `optional:` prefix allows services to start with embedded fallback values if Config Server is temporarily unavailable.
 
@@ -125,15 +125,15 @@ curl http://localhost:8888/loan-service/production
 
 ## Alternatives Considered
 
-**Hardcoded service URLs** — changes to any service's port require edits to every dependent service's configuration and a redeploy. No load balancing across multiple instances. Rejected.
+**Hardcoded service URLs** - changes to any service's port require edits to every dependent service's configuration and a redeploy. No load balancing across multiple instances. Rejected.
 
-**Kubernetes DNS-based discovery** — stable DNS names within a Kubernetes cluster (e.g., `http://loan-service.default.svc.cluster.local`). The correct production approach. For a local development environment without a container orchestrator, Eureka is simpler and provides a visual dashboard for verification. Rejected for this environment, not for production.
+**Kubernetes DNS-based discovery** - stable DNS names within a Kubernetes cluster (e.g., `http://loan-service.default.svc.cluster.local`). The correct production approach. For a local development environment without a container orchestrator, Eureka is simpler and provides a visual dashboard for verification. Rejected for this environment, not for production.
 
-**Consul** — stronger service mesh capabilities (health checking, key-value store, multi-datacenter). Adds a separate agent process. Rejected: Eureka is already included in the Spring Cloud Netflix stack; no additional process or configuration is needed.
+**Consul** - stronger service mesh capabilities (health checking, key-value store, multi-datacenter). Adds a separate agent process. Rejected: Eureka is already included in the Spring Cloud Netflix stack; no additional process or configuration is needed.
 
-**Per-service `application.yml` only** — no Config Server. Changing a shared value (e.g., RabbitMQ host) requires editing and redeploying all five services. No queryable configuration endpoint. Rejected.
+**Per-service `application.yml` only** - no Config Server. Changing a shared value (e.g., RabbitMQ host) requires editing and redeploying all five services. No queryable configuration endpoint. Rejected.
 
-**Environment variables alone** — valid for secrets but does not support per-service profile overlays or a central queryable configuration state (`curl http://localhost:8888/application/default`). Config Server provides a superset.
+**Environment variables alone** - valid for secrets but does not support per-service profile overlays or a central queryable configuration state (`curl http://localhost:8888/application/default`). Config Server provides a superset.
 
 ## Consequences
 
@@ -155,12 +155,11 @@ curl http://localhost:8888/loan-service/production
 
 ## Report Evidence
 
-- **Verification Report §2** — Eureka dashboard showing all 5 processes UP
-- **Verification Report §3** — Config Server multi-profile curl output
-- **Verification Report §6** — Gateway route table with `lb://` URIs
+- **Verification Report §2** - Eureka dashboard showing all 5 processes UP
+- **Verification Report §3** - Config Server multi-profile curl output
+- **Verification Report §6** - Gateway route table with `lb://` URIs
 
 ## Screencast Timestamps
 
-- `[00:XX:XX]` — Eureka dashboard at http://localhost:8761 — all 5 services UP
-- `[00:XX:XX]` — `curl http://localhost:8888/loan-service/dev` vs `production` — different DDL values
-- `[00:XX:XX]` — Gateway routes a request via `lb://loan-service` (log shows LoadBalancer selecting an instance)
+- `[00:02:45]` - Eureka dashboard at http://localhost:8761 - all 5 services UP
+- `[00:05:19]` - `curl http://localhost:8888/loan-service/dev` vs `production` - different DDL values
