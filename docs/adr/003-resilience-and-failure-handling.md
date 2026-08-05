@@ -150,12 +150,12 @@ INFO [inventory-service,4f2e1a3b9c7d8e0f,9b8c7d6e] LoanEventListener - Equipment
 
 ## Report Evidence
 
-- **Verification Report §8.1** - Normal path: loan 8 approved via live Feign call, `available=true`
-- **Verification Report §8.2** - Loan 5 REJECTED: Feign returned `available=false` for ON_LOAN item 1 — confirms `@Retry` does not retry business responses
-- **Verification Report §8.3** - Fallback path: circuit-breaker WARN log; actuator showing `state: OPEN`
-- **Verification Report §10.1** - Zipkin services: `["api-gateway","inventory-service","loan-service"]`
-- **Verification Report §10.2** - Zipkin 6 spans across 3 services for `PUT /api/loans/6/approve`
-- **Verification Report §10.3** - Log excerpt with matching `traceId` across loan-service and inventory-service
+- Normal path: loan 8 approved via live Feign call, `available=true`
+- Loan 5 REJECTED: Feign returned `available=false` for ON_LOAN item 1 — confirms `@Retry` does not retry business responses
+- Fallback path: circuit-breaker WARN log; actuator showing `state: OPEN`
+- Zipkin services: `["api-gateway","inventory-service","loan-service"]`
+- Zipkin 6 spans across 3 services for `PUT /api/loans/6/approve`
+- Log excerpt with matching `traceId` across loan-service and inventory-service
 
 ## Screencast Timestamps
 
