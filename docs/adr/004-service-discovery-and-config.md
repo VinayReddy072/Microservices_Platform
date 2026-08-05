@@ -155,9 +155,9 @@ curl http://localhost:8888/loan-service/production
 
 ## Report Evidence
 
-- **Verification Report §2** - Eureka dashboard showing all 5 processes UP
-- **Verification Report §3** - Config Server multi-profile curl output
-- **Verification Report §6** - Gateway route table with `lb://` URIs
+- Eureka dashboard showing all 5 processes UP
+- Config Server multi-profile curl output
+- Gateway route table with `lb://` URIs
 
 ## Screencast Timestamps
 
