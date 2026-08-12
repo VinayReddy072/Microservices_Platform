@@ -1022,7 +1022,8 @@ The `traceparent` W3C header propagates trace context from gateway → loan-serv
 
 ![zipkin](images/Zipkin.png)
 ![zipkin1](images/zipkinspanloan.png)
-![zipkin2](images/zipkin_spanapi.png)
+![zipkin2](images/zipkin spanapi.png)
+
 **Async trace — documented finding:** The RabbitMQ consumer span in `LoanEventListener` appears as a **linked child trace** (OTel `LINK`) in Zipkin, not as an inline child span. This is a known Spring AMQP observation behaviour in Spring Boot 4.x: the listener container creates an OTel `LINK` to the publishing span rather than a strict parent-child relationship. The linked trace is visible in Zipkin under the `inventory-service` service filter. This is documented in ADR 3 as a known limitation, not a defect. Making it inline would require manual `traceparent` extraction in the listener — a documented future improvement.
 
 ---
